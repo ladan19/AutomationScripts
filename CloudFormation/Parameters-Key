@@ -4,6 +4,14 @@ Parameters:
   MyKey:
     Description: Select the key name from the list and remove your key from the hard coding
     Type: AWS::EC2::KeyPair::KeyName
+  MyAvailabilityZone:
+    Description: Select the AZ for you Instance
+    Type: String
+    Default: us-east-2a
+    AllowedValues:
+      - us-east-2a
+      - us-east-2b    
+      - us-east-2c
 
 Resources: 
   EC2Instance: 
@@ -17,6 +25,7 @@ Resources:
         - !Ref SSHSecurityGroup 
   SSHSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
+  AvailabilityZone: !Ref MyAvailabilityZone
     Properties: 
       GroupDescription: SG from SSH access
       SecurityGroupIngress:
