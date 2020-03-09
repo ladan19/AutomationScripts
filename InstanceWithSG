@@ -8,8 +8,8 @@ Resources:
       InstanceType: YourTypeInstance
       KeyName: YourKey
       SecurityGroups:
-        - !Ref SG-SSH
-  SG-SSH:
+        - !Ref SGSSH
+  SGSSH:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group for SSH Access
