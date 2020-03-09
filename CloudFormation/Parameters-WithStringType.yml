@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  MyKey:
+    Description: Select the key name from the list and remove your key from the hard coding
+    Type: AWS::EC2::KeyPair::KeyName
+  MyAvailabilityZone:
+    Description: Select the AZ for you Instance
+    Type: String
+    Default: us-east-2a
+    AllowedValues:
+      - us-east-2a
+      - us-east-2b    
+      - us-east-2c
+  MyInstaceType:
+    Description: Select type for your Instance
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.nano
+      - t2.medium
+
+
+Resources: 
+  EC2Instance: 
+    Type: 'AWS::EC2::Instance'
+    Properties: 
+      ImageId: XXXXX
+      InstanceType: !Ref MyInstaceType
+      KeyName: !Ref MyKey
+      SecurityGroups:
+        - default        
+        - !Ref SSHSecurityGroup 
+  SSHSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+  AvailabilityZone: !Ref MyAvailabilityZone
+    Properties: 
+      GroupDescription: SG from SSH access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
