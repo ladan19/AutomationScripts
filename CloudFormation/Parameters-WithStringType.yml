@@ -30,12 +30,11 @@ Resources:
       ImageId: XXXXX
       InstanceType: !Ref MyInstaceType
       KeyName: !Ref MyKey
-      SecurityGroups:
-        - default        
-        - !Ref SSHSecurityGroup 
+      SecurityGroups:      
+        - !Ref SSHSecurityGroup
+      AvailabilityZone: !Ref MyAvailabilityZone
   SSHSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
-  AvailabilityZone: !Ref MyAvailabilityZone
     Properties: 
       GroupDescription: SG from SSH access
       SecurityGroupIngress:
@@ -43,3 +42,7 @@ Resources:
           FromPort: '22'
           ToPort: '22'
           CidrIp: 0.0.0.0/0
+  MyElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref EC2Instance 
