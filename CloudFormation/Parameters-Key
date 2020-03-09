@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  MyKey:
+    Description: Select the key name from the list and remove your key from the hard coding
+    Type: AWS::EC2::KeyPair::KeyName
+
+Resources: 
+  EC2Instance: 
+    Type: 'AWS::EC2::Instance'
+    Properties: 
+      ImageId: XXXXX
+      InstanceType: XXXXX
+      KeyName: !Ref MyKey
+      SecurityGroups:
+        - default        
+        - !Ref SSHSecurityGroup 
+  SSHSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties: 
+      GroupDescription: SG from SSH access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
