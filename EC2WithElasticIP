@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: xxxx
+      InstanceType: xxxx
+      KeyName: xxxx
+      SecurityGroups:
+        - !Ref SGSSH
+        - !Ref AppOn9090
+  SGSSH:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for SSH Access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+  AppOn9090:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Open 9090 port for my new apllication
+      SecurityGroupIngress: 
+      - IpProtocol: tcp
+        FromPort: '9090'
+        ToPort: '9090'
+        CidrIp: 0.0.0.0/0
+  MyElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref EC2Instance     
