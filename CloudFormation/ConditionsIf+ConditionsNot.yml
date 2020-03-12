@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  MyKey:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Select the keypair
+  EnvironmentName:
+    Description: Select the environment
+    Type: String
+    Default: QA
+    AllowedValues: 
+      - QA
+      - prod
+      - dev
+      - lab
+
+
+Mappings:
+  MyRegionMap:
+    us-east-1:
+      AMIID: ami-0a887e401f7654935
+    sa-east-1:
+      AMIID: ami-080a223be3de0c3b8     
+  MyEnvironmentMap:
+    QA:
+      instanceType: t2.micro
+    prod:
+      instanceType: t2.small
+    dev:
+        instanceType: t2.micro
+    lab:
+       instanceType: t2.micro
+
+Conditions:
+  CreateEIP: !Equals [!Ref EnvironmentName, prod]
+  CreateSecurityGroup: !Equals [!Ref EnvironmentName, prod ]
+  CreateProdQA: !Not [{Condition: CreateSecurityGroup}]  
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap
+        - MyRegionMap
+        - !Ref 'AWS::Region'
+        - AMIID
+      InstanceType: !FindInMap
+        - MyEnvironmentMap
+        - !Ref EnvironmentName
+        - instanceType
+      KeyName: !Ref MyKey
+      SecurityGroups: !If [CreateProdQA, [!Ref SSHSecurityGroupQA], [!Ref SSHSecurityGroup]]
+
+  SSHSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Condition: CreateSecurityGroup
+    Properties: 
+      GroupDescription: SG from SSH access and anything more
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+  
+  SSHSecurityGroupQA:
+    Type: 'AWS::EC2::SecurityGroup'
+    Condition: CreateProdQA
+    Properties:
+      GroupDescription: ProdSG
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '8080'
+          ToPort: '8080'
+          CidrIp: 1.2.3.4/32
+
+  MyElasticIP:
+    Type: AWS::EC2::EIP
+    Condition: CreateEIP
+    Properties:
+      InstanceId: !Ref EC2Instance 
