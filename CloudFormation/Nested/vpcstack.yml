@@ -5,11 +5,34 @@ Parameters:
   VpcBlock:
     Type: String
     Default: 10.0.0.0/16
-    Description: VPC default CIDR
-  Subnet1Block:
+    Description: VPC CIDR range
+  Subnet1Public:
     Type: String
     Default: 10.0.1.0/24
     Description: CIDR block for subnet1
+  Subnet2Public:
+    Type: String
+    Default: 10.0.2.0/24
+    Description: CIDR block for Subnet2Public
+  Subnet3Public:
+    Type: String
+    Default: 10.0.3.0/24
+    Description: CIDR block for Subnet3Public
+  Subnet1Private:
+    Type: String
+    Default: 10.0.4.0/24
+    Description: CIDR block for Subnet1Private
+    Subnet2Private:
+    Type: String
+    Default: 10.0.5.0/24
+    Description: CIDR block for Subnet2Private
+  Subnet3Private:
+    Type: String
+    Default: 10.0.6.0/24
+    Description: CIDR block for Subnet3Private
+
+  
+
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -18,7 +41,12 @@ Metadata:
         default: 
         Parameters:
           - VpcBlock
-          - Subnet1Block
+          - Subnet1Public
+          - Subnet2Public
+          - Subnet3Public
+          - Subnet1Private
+          - Subnet2Private
+          - Subnet3Private
     ParameterLabels:
       VpcBlock:
         default: VPC CIDR range selection
@@ -39,16 +67,20 @@ Resources:
     Type: AWS::EC2:Subnet
     Properties:
       VpcId: !Ref TemplateVPC
-      CidrBlock: !Ref Subnet1Block
+      CidrBlock: !Ref Subnet1Public
       Tags:
         - Key: Name
-        Value: !Sub "${AWS::StackName}-subnet1"
-      #AvailabilityZone: us-east-2 or we can using intrinsic functions 
-      AvailabilityZone:
-        Fn::Select:
-          - '0'
-          - Fn::GetAZs:
-            Ref: AWS::Region
+          Value: !Sub "${AWS::StackName}-subnet1-public"
+      AvailabilityZone: us-east-1a
+  Subnet2:
+    Type: AWS::EC2:Subnet
+    Properties:
+      VpcId: !Ref TemplateVPC
+      CidrBlock: !Ref Subnet2Public
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-subnet2-public"
+      AvailabilityZone: us-east-1b
 
   RouteTable:
     Type: AWS::EC2::RouteTable
@@ -64,6 +96,7 @@ Resources:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref Subnet1
+      SubnetId: !Ref Subnet2
       RouteTableId: !Ref RouteTable
 
   InternetGW:
@@ -92,3 +125,6 @@ Outputs:
   VPCId:
     Description: VPC Id
     Value: !Ref TemplateVPC
+
+    #M5.large 
+    #30GB

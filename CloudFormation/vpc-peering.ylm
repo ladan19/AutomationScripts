@@ -1,0 +1,262 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: VPC Stack
+
+Parameters:
+  VpcBlock:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: VPC CIDR range
+  Subnet1Public:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: CIDR block for subnet1
+  Subnet2Public:
+    Type: String
+    Default: 10.0.2.0/24
+    Description: CIDR block for Subnet2Public
+  Subnet3Public:
+    Type: String
+    Default: 10.0.3.0/24
+    Description: CIDR block for Subnet3Public
+
+  Subnet1Private:
+    Type: String
+    Default: 10.0.4.0/24
+    Description: CidrBlock for Subnet1Private
+  Subnet2Private:
+    Type: String
+    Default: 10.0.5.0/24
+    Description: CidrBlock for Subnet2Private
+  Subnet3Private:
+    Type: String
+    Default: 10.0.6.0/24
+    Description: CidrBlock for Subnet3Private          
+
+Resources:
+  TemplateVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcBlock
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-VPC"
+##### PUBLIC SUBNET #####
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref TemplateVPC
+      CidrBlock: !Ref Subnet1Public
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-subnet1-public"
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref AWS::Region
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref TemplateVPC
+      CidrBlock: !Ref Subnet2Public
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-subnet2-public"
+          AvailabilityZone: !Select
+          - 1
+          - Fn::GetAZs: !Ref AWS::Region
+  Subnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref TemplateVPC
+      CidrBlock: !Ref Subnet3Public
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-subnet3-public"
+          AvailabilityZone: !Select
+          - 2
+          - Fn::GetAZs: !Ref AWS::Region
+##### PRIVATE SUBNETS #####
+  Subnet4:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref TemplateVPC
+      CidrBlock: !Ref Subnet1Private 
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-subnet1-private"
+          AvailabilityZone: !Select
+          - 0
+          - Fn::GetAZs: !Ref AWS::Region
+  Subnet5:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref TemplateVPC
+      CidrBlock: !Ref Subnet2Private 
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-subnet2-private"
+          AvailabilityZone: !Select
+          - 1
+          - Fn::GetAZs: !Ref AWS::Region
+  Subnet6:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref TemplateVPC
+      CidrBlock: !Ref Subnet3Private
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-Subnet3-private"
+          AvailabilityZone: !Select
+          - 2
+          - Fn::GetAZs: !Ref AWS::Region
+
+  RouteTablePublic:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref TemplateVPC
+      Tags:
+        - Key: Name
+          Value: Public Subnet
+        - Key: Network
+          Value: Public
+
+  RouteTablePrivate:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref TemplateVPC
+      Tags:
+        - Key: Name
+          Value: Private Subnet
+        - Key: Network
+          Value: Private
+
+#### PRIVATE SUBNET ASSOCIATION #### 
+  RouteTableAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet1
+      RouteTableId: !Ref RouteTablePublic
+
+  RouteTableAssoc2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet2
+      RouteTableId: !Ref RouteTablePublic
+
+  RouteTableAssoc3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet3
+      RouteTableId: !Ref RouteTablePublic
+
+#### PRIVATE SUBNET ASSOCIATION #### 
+
+  RouteTableAssoc4:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet4
+      RouteTableId: !Ref RouteTablePrivate
+  RouteTableAssoc5:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet5
+      RouteTableId: !Ref RouteTablePrivate
+  RouteTableAssoc6:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet6
+      RouteTableId: !Ref RouteTablePrivate
+
+  InternetGW:
+    Type: AWS::EC2::InternetGateway
+
+  VPCGatewayAtt:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGW
+      VpcId: !Ref TemplateVPC
+  
+  NATGW:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt 'EIP.AllocationId'
+      SubnetId: !Ref Subnet1 
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}--NatGateway"
+          
+
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+            
+  VPCRoute:
+    DependsOn: VPCGatewayAtt 
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTablePublic
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGW
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTablePrivate
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGW
+
+  PeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !Ref TemplateVPC
+      PeerRegion: RegionPeering
+      PeerVpcId: VPC_ID_PEERING
+      Tags: 
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PeeringConnection"
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: My SG
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 10.0.0.0/8
+
+
+Outputs:
+    Subnet1Id:
+        Description: SubnetPublic1 ID        
+        Value: !Ref Subnet1
+    
+    Subnet2Id: 
+        Description: SubnetPublic2 ID 
+        Value: !Ref Subnet2
+
+    Subnet3Id: 
+        Description: SubnetPublic3 ID
+        Value: !Ref Subnet3
+
+    Subnet4Id: 
+        Description: SubnetPrivate1 ID
+        Value: !Ref Subnet4
+
+    Subnet5Id: 
+        Description: SubnetPrivate2 ID
+        Value: !Ref Subnet5
+
+    Subnet6Id: 
+        Description: SubnetPrivate3 ID
+        Value: !Ref Subnet6
+    
+    VPCId:
+        Description: VPC ID
+        Value: !Ref TemplateVPC
+    
+    NATGWID:
+        Description: NATGW ID
+        Value: !Ref NATGW
