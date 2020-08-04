@@ -1,0 +1,132 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: EC2 Instance that I using in my project with role to access S3 buckets
+
+Parameters:
+    KeyName:
+        Description: Key name
+        Type: AWS::EC2::KeyPair::KeyName
+
+Resources:
+
+
+
+    MyInstanceProfileRole:
+        Type: 'AWS::IAM::Role'
+        Properties:
+          AssumeRolePolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Principal:
+                  Service:
+                    - ec2.amazonaws.com
+                Action: 'sts:AssumeRole'
+          Path: /
+          Policies:
+            - PolicyName: MyCICDEC2InstanceProfilePolicy
+              PolicyDocument:
+                Version: 2012-10-17
+                Statement:
+                  - Effect: Allow
+                    Action:
+                      - 's3:Get*'
+                      - 's3:List*'
+                    Resource: '*'
+
+
+    MyInstaneProfile:
+        Type: AWS::IAM::InstanceProfile
+        Properties:
+            Path: /
+            Roles:
+                - !Ref MyInstanceProfileRole
+
+
+    MySecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupDescription: My SG with port 22 and 8080 inbound
+            SecurityGroupIngress:
+                - IpProtocol: tcp
+                  FromPort: '22'
+                  ToPort: '22'
+                  CidrIp: 0.0.0.0/0
+                - IpProtocol: tcp
+                  FromPort: '8080'
+                  ToPort: '8080'
+                  CidrIp: 0.0.0.0/0
+
+    MyStageInstance:
+        Type: AWS::EC2::Instance
+        Properties:
+            ImageId: ami-02354e95b39ca8dec
+            InstanceType: t2.micro
+            KeyName: !Ref KeyName
+            SecurityGroups:
+                - !Ref MySecurityGroup
+            IamInstanceProfile: !Ref MyInstaneProfile
+            Tags:
+                - Key: Name
+                  Value: Dev
+                - Key: Environment
+                  Value: Prod
+
+            UserData: 
+                Fn::Base64: |
+                    #!/bin/bash
+                    sudo yum update
+                    sudo yum install ruby
+                    sudo yum install wget
+                    sudo yum -y erase java-1.7.0-openjdk.x86_64
+                    sudo yum -y install java-1.8.0-openjdk.x86_64
+                    sudo yum -y install java-1.8.0-openjdk-devel
+                    sudo yum -y install tomcat
+                    service tomcat start
+                    cd /home/ec2-user
+                    wget https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install
+                    chmod +x ./install
+                    sudo ./install auto     
+
+
+    MyProdInstance:
+        Type: AWS::EC2::Instance
+        Properties:
+            ImageId: ami-02354e95b39ca8dec
+            InstanceType: t2.micro
+            KeyName: !Ref KeyName
+            SecurityGroups:
+                - !Ref MySecurityGroup
+            IamInstanceProfile: !Ref MyInstaneProfile
+            Tags:
+                - Key: Name
+                  Value: Prod
+                - Key: Environment
+                  Value: Stage
+
+            UserData:
+                Fn::Base64: |
+                    #!/bin/bash
+                    sudo yum update
+                    sudo yum install ruby
+                    sudo yum install wget
+                    sudo yum -y erase java-1.7.0-openjdk.x86_64
+                    sudo yum -y install java-1.8.0-openjdk.x86_64
+                    sudo yum -y install java-1.8.0-openjdk-devel
+                    sudo yum -y install tomcat
+                    service tomcat start
+                    cd /home/ec2-user
+                    wget https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install
+                    chmod +x ./install
+                    sudo ./install auto
+                    mkdir /usr/share/tomcat/webapps/ROOT
+                    touch /usr/share/tomcat/webapps/ROOT/index.html
+                    echo "Teste do Ladan para UserData" > /usr/share/tomcat/webapps/ROOT/index.html
+
+
+Outputs:
+    StageAppURL:
+        Description: Staging Application Access URL
+        Value: !Sub 'http://${MyStageInstance.PublicDnsName}:8080/ccdemo/hello'
+    DevAppURL:
+        Description: Staging Application Access URL
+        Value: !Sub 'http://${MyProdInstance.PublicDnsName}:8080/ccdemo/hello'
